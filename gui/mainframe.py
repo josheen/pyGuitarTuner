@@ -20,7 +20,8 @@ class MainFrame(tkinter.Frame):
             background = 'purple',
             foreground = 'white')
 
-        self.lbl.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
+        self.lbl.place(relx=0.5, rely=0.25, anchor=tkinter.CENTER)
+        self.draw_moving_grid(0)
 
     def run(self):
         self.time()
@@ -29,3 +30,21 @@ class MainFrame(tkinter.Frame):
     def time(self):
         string = strftime('%H:%M:%S %p')
         self.lbl.config(text = string)
+
+    def create_grid(self, entry_point):
+        self.canvas.delete('grid_line') # Will only remove the grid_line
+        # Creates all vertical lines
+        for i in range(0, Settings.CANVAS_SIZE, Settings.GRID_SPACING):
+            self.canvas.create_line([(i, 0), (i, Settings.CANVAS_SIZE)], tag='grid_line', fill=self.color_manager.grid_color)
+
+        # Creates all horizontal lines
+        for i in range(entry_point, Settings.CANVAS_SIZE, Settings.GRID_SPACING):
+            self.canvas.create_line([(0, i), (Settings.CANVAS_SIZE, i)], tag='grid_line', fill=self.color_manager.grid_color)
+
+    def draw_moving_grid(self, current_index):
+        if current_index == Settings.GRID_SPACING:
+            current_index = 0
+        
+        self.create_grid(current_index)
+        current_index+=1
+        self.after(75, self.draw_moving_grid, current_index)
