@@ -30,7 +30,7 @@ class MainFrame(tkinter.Frame):
 
         self.frequencyQueue = queue.Queue()
         self.pitchDetectionThread = PitchDetect(self.frequencyQueue)
-        listenerThread = threading.Thread(target=self.listner)
+        listenerThread = threading.Thread(target=self.listner, daemon=True)
 
         self.pitchDetectionThread.start()
         listenerThread.start()

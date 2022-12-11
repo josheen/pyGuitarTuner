@@ -22,6 +22,7 @@ class PitchDetect(threading.Thread):
 
     def __init__(self, queue):
         super().__init__()
+        self.daemon = True
         self.running = False
         self.queue = queue
         try:
