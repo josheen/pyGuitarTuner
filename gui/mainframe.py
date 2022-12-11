@@ -1,6 +1,9 @@
 import tkinter
 from time import strftime
 from settings import Settings
+from audio_analyzer.pyaudio_impl import PitchDetect
+import queue
+import threading
 
 class MainFrame(tkinter.Frame):
     def __init__(self, master, *args, **kwargs):
@@ -23,13 +26,21 @@ class MainFrame(tkinter.Frame):
         self.lbl.place(relx=0.5, rely=0.25, anchor=tkinter.CENTER)
         self.draw_moving_grid(0)
 
+        self.currentPitch = 0
+
+        self.frequencyQueue = queue.Queue()
+        self.pitchDetectionThread = PitchDetect(self.frequencyQueue)
+        listenerThread = threading.Thread(target=self.listner)
+
+        self.pitchDetectionThread.start()
+        listenerThread.start()
+
     def run(self):
-        self.time()
+        self.update_label()
         self.after(self.fps_period_ms, self.run)
 
-    def time(self):
-        string = strftime('%H:%M:%S %p')
-        self.lbl.config(text = string)
+    def update_label(self):
+        self.lbl.config(text=self.currentPitch)
 
     def create_grid(self, entry_point):
         self.canvas.delete('grid_line') # Will only remove the grid_line
@@ -48,3 +59,8 @@ class MainFrame(tkinter.Frame):
         self.create_grid(current_index)
         current_index+=1
         self.after(75, self.draw_moving_grid, current_index)
+
+    def listner(self):
+        while True:
+            if self.frequencyQueue:
+                self.currentPitch = self.frequencyQueue.get()
