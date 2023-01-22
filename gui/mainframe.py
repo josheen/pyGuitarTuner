@@ -19,14 +19,21 @@ class MainFrame(tkinter.Frame):
 
         self.fps_period_ms = int(1/Settings.FPS*1000)
 
-        self.lbl = tkinter.Label(self, font = ('calibri', 40, 'bold'),
+        self.freq_lbl = tkinter.Label(self, font = ('calibri', 40, 'bold'),
             background = 'purple',
             foreground = 'white')
 
-        self.lbl.place(relx=0.5, rely=0.25, anchor=tkinter.CENTER)
+        self.freq_lbl.place(relx=0.5, rely=0.25, anchor=tkinter.CENTER)
         self.draw_moving_grid(0)
 
+        self.note_lbl = tkinter.Label(self, font = ('calibri', 30, 'bold'),
+            background = 'purple',
+            foreground = 'white')
+
+        self.note_lbl.place(relx=0.5, rely=0.35, anchor=tkinter.CENTER)
+
         self.currentPitch = 0
+        self.currentNote = "A"
 
         self.frequencyQueue = queue.Queue()
         self.pitchDetectionThread = PitchDetect(self.frequencyQueue)
@@ -40,7 +47,8 @@ class MainFrame(tkinter.Frame):
         self.after(self.fps_period_ms, self.run)
 
     def update_label(self):
-        self.lbl.config(text=self.currentPitch)
+        self.freq_lbl.config(text=self.currentPitch)
+        self.note_lbl.config(text=self.currentNote)
 
     def create_grid(self, entry_point):
         self.canvas.delete('grid_line') # Will only remove the grid_line
@@ -64,3 +72,5 @@ class MainFrame(tkinter.Frame):
         while True:
             if self.frequencyQueue:
                 self.currentPitch = self.frequencyQueue.get()
+                if self.currentPitch:
+                    self.currentNote = self.pitchDetectionThread.cnvt_note(self.currentPitch)
