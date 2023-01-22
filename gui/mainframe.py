@@ -1,5 +1,4 @@
 import tkinter
-from time import strftime
 from settings import Settings
 from audio_analyzer.pyaudio_impl import PitchDetect
 import queue
