@@ -3,6 +3,7 @@ from settings import Settings
 from audio_analyzer.pyaudio_impl import PitchDetect
 import queue
 import threading
+from PIL import ImageTk, Image
 
 class MainFrame(tkinter.Frame):
     def __init__(self, master, *args, **kwargs):
@@ -32,7 +33,16 @@ class MainFrame(tkinter.Frame):
         self.note_lbl.place(relx=0.5, rely=0.35, anchor=tkinter.CENTER)
 
         self.currentPitch = 0
-        self.currentNote = "A"
+        self.currentNote = ["A", 4, 0]
+
+        img = Image.open("gui/black-pointer.png")
+        img = img.resize((30,30), Image.ANTIALIAS)
+        img = ImageTk.PhotoImage(img)
+
+        self.tuner_pointer = tkinter.Label(self, image=img, bg=self.color_manager.background_color)
+        self.tuner_pointer.image = img
+
+        self.tuner_pointer.place(relx=0.5, rely=0.12, anchor=tkinter.CENTER)
 
         self.frequencyQueue = queue.Queue()
         self.pitchDetectionThread = PitchDetect(self.frequencyQueue)
@@ -48,6 +58,8 @@ class MainFrame(tkinter.Frame):
     def update_label(self):
         self.freq_lbl.config(text=self.currentPitch)
         self.note_lbl.config(text=self.currentNote)
+        x_location = (self.currentNote[2]+100)/200
+        self.tuner_pointer.place(relx=x_location, rely=0.12, anchor=tkinter.CENTER)
 
     def create_grid(self, entry_point):
         self.canvas.delete('grid_line') # Will only remove the grid_line
