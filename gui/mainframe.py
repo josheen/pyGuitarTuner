@@ -4,8 +4,13 @@ from audio_analyzer.pyaudio_impl import PitchDetect
 import queue
 import threading
 from PIL import ImageTk, Image
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
 
 class MainFrame(tkinter.Frame):
+    MAX_X_DATA_SAMPLES = 100
+    MAX_Y_DATA_SAMPLES = 100
     def __init__(self, master, *args, **kwargs):
         tkinter.Frame.__init__(self, master, *args, **kwargs)
         self.app_pointer = master
@@ -13,24 +18,30 @@ class MainFrame(tkinter.Frame):
         
         self.configure(bg=self.color_manager.background_color) #31,31,31
 
+        self.fps_period_ms = int(1/Settings.FPS*1000)
+
         self.canvas = tkinter.Canvas(master=self, bg=self.color_manager.background_color,
         highlightthickness=0, height=Settings.CANVAS_SIZE, width=Settings.CANVAS_SIZE)
         self.canvas.place(anchor=tkinter.CENTER, relx=0.5, rely=0.5)
 
-        self.fps_period_ms = int(1/Settings.FPS*1000)
 
-        self.freq_lbl = tkinter.Label(self, font = ('calibri', 40, 'bold'),
-            background = 'purple',
-            foreground = 'white')
+        self.figure = Figure(figsize=(4,5), dpi=100)
+        self.figure.patch.set_facecolor(self.color_manager.background_color)
+        self.ax = self.figure.add_subplot(111)
+        self.figure.tight_layout()
+        self.ax.grid()
+        self.ax.set_facecolor(self.color_manager.background_color)
 
-        self.freq_lbl.place(relx=0.5, rely=0.25, anchor=tkinter.CENTER)
-        self.draw_moving_grid(0)
+        self.x_data = [0]
+        self.y_data = [0]
 
-        self.note_lbl = tkinter.Label(self, font = ('calibri', 30, 'bold'),
-            background = 'purple',
-            foreground = 'white')
+        self.plot = self.ax.plot(self.x_data, self.y_data)[0]
 
-        self.note_lbl.place(relx=0.5, rely=0.35, anchor=tkinter.CENTER)
+        self.ax.set_ylim(-100, 100)
+        self.ax.set_xlim(0, 100)
+
+        self.canvas = FigureCanvasTkAgg(self.figure, self)
+        self.canvas.get_tk_widget().place(relx=0.5, rely=0.55, anchor=tkinter.CENTER)
 
         self.currentPitch = 0
         self.currentNote = ["A", 4, 0]
@@ -41,6 +52,18 @@ class MainFrame(tkinter.Frame):
 
         self.tuner_pointer = tkinter.Label(self, image=img, bg=self.color_manager.background_color)
         self.tuner_pointer.image = img
+
+        self.freq_lbl = tkinter.Label(self, font = ('calibri', 40, 'bold'),
+            background = self.color_manager.background_color,
+            foreground = 'white')
+
+        self.freq_lbl.place(relx=0.5, rely=0.15, anchor=tkinter.CENTER)
+
+        self.note_lbl = tkinter.Label(self, font = ('calibri', 30, 'bold'),
+            background = self.color_manager.background_color,
+            foreground = 'white')
+
+        self.note_lbl.place(relx=0.5, rely=0.25, anchor=tkinter.CENTER)
 
         self.tuner_pointer.place(relx=0.5, rely=0.12, anchor=tkinter.CENTER)
 
@@ -58,26 +81,28 @@ class MainFrame(tkinter.Frame):
     def update_label(self):
         self.freq_lbl.config(text=self.currentPitch)
         self.note_lbl.config(text=self.currentNote)
-        x_location = (self.currentNote[2]+100)/200
-        self.tuner_pointer.place(relx=x_location, rely=0.12, anchor=tkinter.CENTER)
 
-    def create_grid(self, entry_point):
-        self.canvas.delete('grid_line') # Will only remove the grid_line
-        # Creates all vertical lines
-        for i in range(0, Settings.CANVAS_SIZE, Settings.GRID_SPACING):
-            self.canvas.create_line([(i, 0), (i, Settings.CANVAS_SIZE)], tag='grid_line', fill=self.color_manager.grid_color)
+        if len(self.x_data) >= self.MAX_X_DATA_SAMPLES:
+            pass
+        else:
+            self.x_data.append(self.x_data[-1]+1)
 
-        # Creates all horizontal lines
-        for i in range(entry_point, Settings.CANVAS_SIZE, Settings.GRID_SPACING):
-            self.canvas.create_line([(0, i), (Settings.CANVAS_SIZE, i)], tag='grid_line', fill=self.color_manager.grid_color)
+        if self.currentPitch:
+            x_location = (self.currentNote[2]+100)/200
+            self.y_data.insert(0,self.currentNote[2])
+        else:
+            x_location = 0.5
+            self.y_data.insert(0,0)
 
-    def draw_moving_grid(self, current_index):
-        if current_index == Settings.GRID_SPACING:
-            current_index = 0
-        
-        self.create_grid(current_index)
-        current_index+=1
-        self.after(75, self.draw_moving_grid, current_index)
+        self.tuner_pointer.place(relx=x_location, rely=0.06, anchor=tkinter.CENTER)
+
+        if len(self.y_data) > self.MAX_Y_DATA_SAMPLES:
+            self.y_data = self.y_data[:self.MAX_Y_DATA_SAMPLES]
+
+        self.plot.set_xdata(self.x_data)
+        self.plot.set_ydata(self.y_data)
+        self.canvas.draw_idle()
+
 
     def listner(self):
         while True:
