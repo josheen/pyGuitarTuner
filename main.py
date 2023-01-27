@@ -13,7 +13,7 @@ class App(tkinter.Tk):
         self.color_manager = ColorManager()
         self.mainframe = MainFrame(self)
         self.mainframe.place(relx=0, rely=0, relheight=1, relwidth=1)
-
+        #self.wm_attributes("-transparentcolor",'grey')
         self.minsize(Settings.WIDTH, Settings.HEIGHT)
         self.resizable(False, False)
     def start(self):
